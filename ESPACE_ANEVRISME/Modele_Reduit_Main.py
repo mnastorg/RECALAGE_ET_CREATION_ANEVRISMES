@@ -19,6 +19,7 @@ def Main_Modele_Reduit(liste_t, liste_theta, CONTROL, mesh):
     new_points = []
     cercle = []
     erreur = []
+    Params = []
 
     degree = 3
     knot = bs.Knotvector(CONTROL, degree)
@@ -47,7 +48,7 @@ def Main_Modele_Reduit(liste_t, liste_theta, CONTROL, mesh):
 
 
         #EFFECTUE LE FITTING DU MODELE D'ORDRE n VIA UNE SERIE DE FOURIER
-        fit = mru.Modele_Fourier(THETA_R_EXP, ordre = 5)
+        fit, Param = mru.Modele_Fourier(THETA_R_EXP, ordre = 5)
 
 
         #ON CALCUL LES R CORRESPONDANTS AUX THETA GRACE AU MODELE ET ON RESSORT
@@ -81,4 +82,4 @@ def Main_Modele_Reduit(liste_t, liste_theta, CONTROL, mesh):
     print("Temps total pour {} points est de {}".format(len(liste_t), round(end_time - start_time, 3)))
     print("L'erreur totale est de : ", np.mean(erreur))
 
-    return parametrisation_totale, new_points, cercle
+    return parametrisation_totale, new_points, cercle, Param

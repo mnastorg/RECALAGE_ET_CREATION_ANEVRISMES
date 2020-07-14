@@ -1,17 +1,60 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import trimesh
+import time
+import time
 from math import *
 from symfit import parameters, variables, sin, cos, Fit
 from sklearn.decomposition import PCA
 from scipy.spatial import distance
+import trimesh
 
 import Gestion_Fichiers as gf
 import BSplines_Utilities as bs
 import Statistiques_Utilities as stats
 
+gf.Reload(gf)
 gf.Reload(bs)
-gf.Reload(stats)
+
+def Matrice_coefficients(liste_control, liste_mesh, t, degree, n_ordre):
+
+    coeffs_fourier = []
+    determination = []
+
+    for control, mesh in zip(liste_control, liste_mesh):
+
+        COEFFS, erreur =  Extraction_coeffs_fourier(control, mesh, t, degree, n_ordre)
+        coeffs_fourier.append(COEFFS)
+        determination.append(erreur)
+
+    MAT_PARAM = np.hstack(coeffs_fourier)
+
+    return MAT_PARAM, determination
+
+def Extraction_coeffs_fourier(CONTROL, mesh, t, degree, n_ordre):
+
+    coeffs_fourier = []
+
+    knot = bs.Knotvector(CONTROL, degree)
+
+    #EXTRAIT LES COORDONNEES DU POINT ET LE REPERE DE FRENET
+    COORD, TAN, NOR, BI = Point_de_reference(t, CONTROL, knot, degree)
+    X_t = COORD[:,0]
+    Y_t = COORD[:,1]
+    Z_t = COORD[:,2]
+
+
+    #CALCUL DE LA MATRICE DE PASSAGE DE LA BASE CANONIQUE A LA BASE DEFINIE PAR
+    #LE REPERE DE FRENET
+    PASSAGE = Matrice_de_passage(TAN, NOR, BI)
+
+    #COUPURE DE L'AORTE PAR LE PLAN (N/B). POUR TOUT POINT DE LA COUPURE, RESSORT
+    #SON ANGLE / NORMALE (COLONNE 0) ET SA DISTANCE / COORD (COLONNE 2).
+    #PERMET D'EXPRIMER UN MODELE VIA UNE SERIE DE FOURIER.
+    THETA_R_EXP = Modelisation_contour(PASSAGE, COORD, TAN, mesh)
+
+    #EFFECTUE LE FITTING DU MODELE D'ORDRE n VIA UNE SERIE DE FOURIER
+    COEFFS, erreur = Modele_Fourier(THETA_R_EXP, ordre = n_ordre)
+
+    return COEFFS, erreur
 
 ##################################################################################################################
 ############################################## FONCTIONS PRINCIPALES #############################################
@@ -51,31 +94,7 @@ def Modelisation_contour(PASSAGE, COORD, TAN, mesh):
     #RESSORT LE TABLEAU DE THETA R
     TAB = Theta_R_Experimental(COORD_PLAN, COUPURE_PLAN)
 
-    return TAB, COORD_PLAN, CERCLE
-
-def Theta_R_Approx(fit, THETA_R_EXP, liste_theta):
-
-    #ON EFFECTUE LE FITTING
-    fit_result = fit.execute()
-    erreur = fit_result.r_squared
-    #print(fit_result)
-
-    """
-    #ON AFFICHE LA COURBE EXPERIMENTALE ET LE FITTING
-    plt.plot(THETA_R_EXP[:,0], THETA_R_EXP[:,1], 'b', label = "Fonction initiale")
-    plt.plot(THETA_R_EXP[:,0], fit.model(x = THETA_R_EXP[:,0], **fit_result.params).y, 'r', label = "Fitting série de Fourier")
-    plt.xlabel('Theta')
-    plt.ylabel('R')
-    plt.legend()
-    plt.show()
-    """
-
-    #ON CALCUL LES VALEURS DE R CORRESPONDANTES AUX THETA
-    R = fit.model(x = np.asarray(liste_theta), **fit_result.params).y
-
-    THETA_R_APPROX = np.hstack((np.asarray(liste_theta)[np.newaxis].T , np.asarray(R)[np.newaxis].T))
-
-    return THETA_R_APPROX, erreur
+    return TAB
 
 ##################################################################################################################
 ################################ FONCTIONS COUPURE ET EXTRACTION CERCLE AORTE ####################################
@@ -104,7 +123,6 @@ def ACP(COORD, CENTRE):
 
 def Dist(COORD, Centre):
     """Calcul la distance des points au centre"""
-
     return distance.cdist(COORD, Centre)
 
 def Densite(TRANSFORM, n, k):
@@ -222,17 +240,6 @@ def Changement_de_plan(PASSAGE, COORD, COUPURE):
     N_PLAN = np.asarray([[1, 0, 0]])
     B_PLAN = np.asarray([[0, 1, 0]])
 
-    """
-    plt.figure()
-    plt.scatter(COUPURE_PLAN[:,0], COUPURE_PLAN[:,1])
-    plt.scatter(COORD_PLAN[:,0], COORD_PLAN[:,1], color = 'red')
-    plt.quiver(COORD_PLAN[:,0], COORD_PLAN[:,1], N_PLAN[:,0], N_PLAN[:,1], color = "red", label = "normale")
-    plt.quiver(COORD_PLAN[:,0], COORD_PLAN[:,1], B_PLAN[:,0], B_PLAN[:,1], color = "blue", label = "binormale")
-    plt.legend()
-    plt.title("Coupure de l'aorte avec le nouveau repère")
-    plt.show()
-    """
-
     if round(np.max(COUPURE_PLAN[:,2]),3) - round(np.min(COUPURE_PLAN[:,2]),3) != 0 :
         print("ERREUR LA MATRICE DE PASSAGE EST FAUSSE")
 
@@ -264,14 +271,6 @@ def Theta_R_Experimental(COORD_PLAN, COUPURE_PLAN):
     TAB = np.hstack((Theta[np.newaxis].T, R[np.newaxis].T))
     TAB = TAB[np.argsort(TAB[:, 0])]
 
-    """
-    plt.figure()
-    plt.plot(TAB[:,0], TAB[:,1], color = 'blue')
-    plt.xlabel("Theta")
-    plt.ylabel("R")
-    plt.show()
-    """
-
     return TAB
 
 ##################################################################################################################
@@ -300,25 +299,8 @@ def Modele_Fourier(THETA_R_EXP, ordre = 5):
     #FITTING VIA LA METHODE DE SYMPI
     fit = Fit(model_dict, x = xdata, y = ydata)
     fit_result = fit.execute()
-    Params = fit_result.params
-    Params = np.asarray(list(Params.values()))[np.newaxis].T
+    coeffs = fit_result.params
+    COEFFS = np.asarray(list(coeffs.values()))[np.newaxis].T
+    erreur = fit_result.r_squared
 
-    return fit, Params
-
-##################################################################################################################
-################################ FONCTION POUR LA RECONSTRUCTION DES POINTS APPROXIMES ###########################
-##################################################################################################################
-
-def Reconstruction_contour(COORD_PLAN, TAB, PASSAGE):
-
-    liste_point = []
-    for i in range(np.shape(TAB)[0]):
-        theta = TAB[i,0]
-        r = TAB[i, 1]
-        rotation = np.asarray([np.cos(theta), np.sin(theta), 0])
-        vect = r*rotation
-        new_point_plan = COORD_PLAN + vect
-        new_point_canon = np.dot(PASSAGE, new_point_plan.T).T
-        liste_point.append(new_point_canon)
-
-    return np.vstack(liste_point)
+    return COEFFS, erreur
