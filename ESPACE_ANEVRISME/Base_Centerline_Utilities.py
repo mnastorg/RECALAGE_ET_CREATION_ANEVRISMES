@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.spatial import procrustes
 from math import *
+import sys
 
 import Gestion_Fichiers as gf
 import BSplines_Utilities as bs
@@ -80,15 +81,63 @@ def Matrice_coefficients(bsplines_procrust):
 def Creation_base(MAT, nb_vect_base):
     """ Permet la création d'une base orthonormale avec un nombre
     nb_vect_base de vecteur dans la base"""
-    if nb_vect_base == np.shape(MAT)[1]:
-        return Gram_schmidt(MAT)
 
-    else :
-        return 0
+    return Orthonormalisation(MAT, nb_vect_base)
 
 def Gram_schmidt(X):
     Q, R = np.linalg.qr(X, mode = 'reduced')
     return Q
+
+def Proj(v,u):
+
+    proj = np.dot(v,u)*u
+
+    return proj
+
+def Orthonormalisation(MATRIX, nbr_vect):
+
+    N = np.shape(MATRIX)[0]
+    k = np.shape(MATRIX)[1]
+
+    ortho = []
+    norm = []
+    indice = []
+
+    x_gamma = MATRIX[:,0]
+    e = x_gamma/np.linalg.norm(x_gamma)
+
+    ortho.append(e)
+
+    for i in range(1,k):
+        v = MATRIX[:,i]
+        sum = np.zeros(N)
+
+        for i in range(len(ortho)):
+            sum += Proj(v,ortho[i])
+
+
+        u = v - sum
+        norm.append(np.linalg.norm(u))
+        e = u/np.linalg.norm(u)
+        ortho.append(e)
+
+    if nbr_vect > k:
+        print("ERREUR, veuillez saisir un nombre moins important de vecteurs de base à conserver")
+        sys.exit()
+
+    else:
+        m = 0
+        while m < nbr_vect - 1:
+            indice.append(norm.index(min(norm)))
+            norm[norm.index(min(norm))] = 100*max(norm)
+            m = m + 1
+
+    ORTHO = np.zeros((N, nbr_vect))
+    ORTHO[:, 0] = ortho[0]
+    for i in range(len(indice)):
+        ORTHO[:, i+1] = ortho[indice[i] + 1]
+
+    return ORTHO
 
 def Verification_base(BASE):
     """Retourne la différence entre la matrice identité et t_BASE*BASE. On s'attend

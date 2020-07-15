@@ -273,9 +273,6 @@ def Theta_R_Experimental(COORD_PLAN, COUPURE_PLAN):
 
     return TAB
 
-##################################################################################################################
-################################ FONCTIONS POUR LE FITTING VIA SERIE DE FOURIER ##################################
-##################################################################################################################
 
 def Fourier_series(x, f, n = 0):
     """Construit la série de Fourier comme modèle de référence pour le fitting."""
@@ -304,3 +301,60 @@ def Modele_Fourier(THETA_R_EXP, ordre = 5):
     erreur = fit_result.r_squared
 
     return COEFFS, erreur
+
+##################################################################################################################
+################################ FONCTIONS POUR INTERPOLATION ENTRE DEUX BASES ###################################
+##################################################################################################################
+
+def find_interval(liste_t, target):
+
+    liste_t.append(target)
+    new = sorted(liste_t)
+    indices = new.index(target)
+    a = indices - 1
+    b = indices 
+
+    return a, b
+
+def Solution_geodesique(PHI, PSY, t):
+
+    U, SIGMA, V_T = Svd(PHI, PSY)
+
+    V = np.transpose(V_T)
+    N = np.shape(SIGMA)[0]
+
+    COS_T_SIGMA = np.zeros((N,N))
+    SIN_T_SIGMA = np.zeros((N,N))
+
+    for i in range(N):
+        COS_T_SIGMA[i, i] = np.cos(t*SIGMA[i,i])
+        SIN_T_SIGMA[i, i] = np.sin(t*SIGMA[i,i])
+
+    #SOLUTION DE LA FORME : GAMMA(t) = GAMMA(0).V.cos(SIGMA*t) + U.sin(SIGMA*t)
+    P1 = np.dot(np.dot (PHI,V), COS_T_SIGMA)
+    P2 = np.dot(U, SIN_T_SIGMA)
+
+    GAMMA_t = P1 + P2
+
+    return GAMMA_t
+
+def Svd(PHI, PSY):
+
+    PHI_PHI_T = np.dot(PHI, np.transpose(PHI))
+    N = np.shape(PHI_PHI_T)[0]
+    I = np.eye(N)
+    PHI_T_PSY = np.dot(np.transpose(PHI) , PSY)
+    INV_PHI_T_PSY = np.linalg.inv(PHI_T_PSY)
+
+    #INITIALISATION DE LA MATRICE SUR LEQUEL ON VA FAIRE LA SVD
+    POUR_SVD = np.dot( np.dot( I - PHI_PHI_T , PSY ), INV_PHI_T_PSY )
+
+    #SVD (ATTENTION : LE SIGMA SORTANT DE np.linalg.svd EST UN VECTEUR (k,))
+    U, tnSIGMA, V_T = np.linalg.svd(POUR_SVD, full_matrices = False)
+
+    SIGMA = np.arctan(tnSIGMA)
+
+    #LE VECTEUR SIGMA TRANSFORME EN MATRICE (k,k)
+    SIGMA = np.diag(SIGMA)
+
+    return U, SIGMA, V_T

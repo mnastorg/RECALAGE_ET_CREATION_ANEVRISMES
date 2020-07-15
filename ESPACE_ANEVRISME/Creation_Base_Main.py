@@ -27,7 +27,7 @@ def Main_base_centerline(liste_control, nb_points, degree, nb_vect_base):
 
     #VERIFIE SI LA BASE EST ORTHONORMALE i.e t_B*B = I
     indice = base_center.Verification_base(BASE)
-    if indice < 1.e-14 :
+    if indice < 1.e-10 :
         print("La base centerline est orthonormée avec une erreur : ", indice)
     else :
         print("La base centerline n'est pas orthonormée, erreur de : ", indice)
@@ -37,7 +37,7 @@ def Main_base_centerline(liste_control, nb_points, degree, nb_vect_base):
     l = base_center.Verification_Erreur_Moyenne(MAT, BASE)
     print("L'erreur moyenne entre les vecteurs de la base centerline et leur projeté est de : ", np.mean(l))
 
-    return BASE
+    return BASE, MAT
 
 def Main_base_contour(liste_control, liste_mesh, liste_t, nb_vect_base, degree, n_ordre):
 
@@ -61,11 +61,24 @@ def Main_base_contour(liste_control, liste_mesh, liste_t, nb_vect_base, degree, 
         BASE = base_center.Creation_base(i, nb_vect_base)
         base.append(BASE)
         indice = base_center.Verification_base(BASE)
-        if indice < 1.e-14 :
+        if indice < 1.e-10 :
             print("La base contour est orthonormée avec une erreur : ", indice)
         else :
             print("La base contour n'est pas orthonormée, erreur de : ", indice)
         l = base_center.Verification_Erreur_Moyenne(i, BASE)
         print("L'erreur moyenne entre les vecteurs de la base contour et leur projeté est de : ", np.mean(l))
 
-    return base
+    return mat_coeff, base
+
+def Main_interpolation(liste_base, liste_t, target):
+
+    a, b = base_contour.find_interval(liste_t, target)
+    print(liste_t[a])
+    print(liste_t[b])
+    PHI = liste_base[a]
+    PSY = liste_base[b]
+    val = (target - liste_t[a])/(liste_t[b] - liste_t[a])
+    print(val)
+    INTERPOL = base_contour.Solution_geodesique(PHI, PSY, val)
+
+    return INTERPOL
