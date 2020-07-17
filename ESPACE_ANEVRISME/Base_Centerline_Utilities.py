@@ -2,6 +2,8 @@ import numpy as np
 from scipy.spatial import procrustes
 from math import *
 import sys
+import matplotlib.pyplot as plt
+from scipy.linalg import svd
 
 import Gestion_Fichiers as gf
 import BSplines_Utilities as bs
@@ -24,6 +26,14 @@ def Procrustes(liste_control):
         disparity.append(disp)
 
     return result, disparity
+
+def Dilatation(liste_control):
+
+    REF = liste_control[0]
+    REF -= np.mean(REF, 0)
+    scale = np.linalg.norm(REF)
+
+    return 1./scale
 
 def Construction_bsplines(procrust_control, nb_points, degree):
     """ Construit les BSplines à partir des points de controle qui ont subi
@@ -83,6 +93,24 @@ def Creation_base(MAT, nb_vect_base):
     nb_vect_base de vecteur dans la base"""
 
     return Orthonormalisation(MAT, nb_vect_base)
+
+def POD(MAT):
+    """ Effectue la proper orthogonal decomposition sur le critère de Kaiser"""
+
+    taille = np.shape(MAT)
+
+    PROJ = np.dot(MAT, MAT.T)
+    val, VECT = np.linalg.eigh(PROJ)
+    moy = np.mean(val)
+    indices = (np.where(val >= moy))[0]
+    BASE = VECT[:,indices]
+
+    t = np.arange(0, len(val))
+    plt.plot(t, val[::-1], '-o')
+    plt.title("Convergence des valeurs propres")
+    plt.show()
+
+    return BASE
 
 def Gram_schmidt(X):
     Q, R = np.linalg.qr(X, mode = 'reduced')
@@ -154,9 +182,9 @@ def Verification_Erreur_Moyenne(MAT, BASE):
     projeté dans la nouvelle base (BASE*t_BASE)."""
 
     l = []
+    PROJ = np.dot(BASE, BASE.T)
     for i in range(np.shape(MAT)[1]) :
         VECT = MAT[:,i]
-        PROJ = np.dot(BASE, BASE.T)
         l.append(np.linalg.norm(VECT - np.dot(PROJ, VECT)))
 
     return l

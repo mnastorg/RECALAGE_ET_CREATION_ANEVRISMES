@@ -34,24 +34,19 @@ def Main_Espace(path_centerline, path_mesh, liste_t):
     nb_points_reconstruction = 200
     degree = 3
     ordre_fourier = 5
-    nb_vect_base = len(liste_centerline)
     ##########################################
 
     print("-------------------------- BASE CENTERLINE -----------------------------")
-    BASE_CENTERLINE, MAT = crea_basis.Main_base_centerline(liste_control, nb_points_reconstruction, degree, nb_vect_base)
+    BASE_CENTERLINE = crea_basis.Main_base_centerline(liste_control, nb_points_reconstruction, degree)
     center_time = time.time()
     print("Temps création base centerline : ", round(center_time-lecture_time, 3))
-    print("-------------------------- BASE CONTOUR --------------------------------")
-    mat_coeff_main, liste_base = crea_basis.Main_base_contour(liste_control, liste_mesh, liste_t, nb_vect_base, degree, ordre_fourier)
+
+    print("---------------------- BASE CONTOUR ET RAYON ---------------------------")
+    BASE_CONTOUR, BASE_RAYON = crea_basis.Main_base_contour(liste_control, liste_mesh, liste_t, degree, ordre_fourier)
+
     end_time = time.time()
-    print("Temps création base contour : ", round(end_time - center_time, 3))
+    print("Temps création base contour et rayon : ", round(end_time - center_time, 3))
     print("Temps  total méthode : ", round(end_time - start_time, 3))
 
-    target = 0.15
-    INTERPOL = crea_basis.Main_interpolation(liste_base, liste_t, target)
-    mat_coeff_interpol, liste_base_target = crea_basis.Main_base_contour(liste_control, liste_mesh, [target], nb_vect_base, degree, ordre_fourier)
-    COEFF = mat_coeff_interpol[0]
-    erreur_moyenne = np.mean(bcu.Verification_Erreur_Moyenne(COEFF, INTERPOL))
-    print("L'erreur moyenne entre la solution et sa projection dans la base interpolée est de : ", erreur_moyenne)
 
-    return BASE_CENTERLINE, liste_base
+    return BASE_CENTERLINE, BASE_CONTOUR, BASE_RAYON

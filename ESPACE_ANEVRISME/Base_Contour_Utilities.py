@@ -13,21 +13,29 @@ import Statistiques_Utilities as stats
 
 gf.Reload(gf)
 gf.Reload(bs)
+gf.Reload(stats)
 
-def Matrice_coefficients(liste_control, liste_mesh, t, degree, n_ordre):
+def Matrice_coefficients(liste_control, liste_mesh, liste_t, degree, n_ordre):
 
     coeffs_fourier = []
     determination = []
+    rayon = []
 
     for control, mesh in zip(liste_control, liste_mesh):
+        a0 = []
 
-        COEFFS, erreur =  Extraction_coeffs_fourier(control, mesh, t, degree, n_ordre)
-        coeffs_fourier.append(COEFFS)
-        determination.append(erreur)
+        for t in liste_t :
+
+            COEFFS, erreur =  Extraction_coeffs_fourier(control, mesh, t, degree, n_ordre)
+            coeffs_fourier.append(COEFFS)
+            determination.append(erreur)
+            a0.append(COEFFS[0])
+        rayon.append(np.vstack(a0))
 
     MAT_PARAM = np.hstack(coeffs_fourier)
+    RAYON = np.hstack(rayon)
 
-    return MAT_PARAM, determination
+    return MAT_PARAM, RAYON, determination
 
 def Extraction_coeffs_fourier(CONTROL, mesh, t, degree, n_ordre):
 
@@ -40,8 +48,10 @@ def Extraction_coeffs_fourier(CONTROL, mesh, t, degree, n_ordre):
     X_t = COORD[:,0]
     Y_t = COORD[:,1]
     Z_t = COORD[:,2]
-
-
+    print(COORD)
+    print(TAN)
+    print(NOR)
+    print(BI)
     #CALCUL DE LA MATRICE DE PASSAGE DE LA BASE CANONIQUE A LA BASE DEFINIE PAR
     #LE REPERE DE FRENET
     PASSAGE = Matrice_de_passage(TAN, NOR, BI)
@@ -273,7 +283,6 @@ def Theta_R_Experimental(COORD_PLAN, COUPURE_PLAN):
 
     return TAB
 
-
 def Fourier_series(x, f, n = 0):
     """Construit la série de Fourier comme modèle de référence pour le fitting."""
 
@@ -302,6 +311,16 @@ def Modele_Fourier(THETA_R_EXP, ordre = 5):
 
     return COEFFS, erreur
 
+def Compute_Serie_Fourier(theta, a0, coeff_a, coeff_b):
+
+    serie = np.zeros(len(theta))
+    for j in range(len(theta)) :
+        sum = a0
+        for i in range(len(coeff_a)):
+            sum += coeff_a[i]*np.cos((i+1)*theta[j]) + coeff_b[i]*np.sin((i+1)*theta[j])
+        serie[j] = sum
+    return serie
+
 ##################################################################################################################
 ################################ FONCTIONS POUR INTERPOLATION ENTRE DEUX BASES ###################################
 ##################################################################################################################
@@ -312,7 +331,7 @@ def find_interval(liste_t, target):
     new = sorted(liste_t)
     indices = new.index(target)
     a = indices - 1
-    b = indices 
+    b = indices
 
     return a, b
 
@@ -358,3 +377,21 @@ def Svd(PHI, PSY):
     SIGMA = np.diag(SIGMA)
 
     return U, SIGMA, V_T
+
+##################################################################################################################
+################################ FONCTION POUR LA RECONSTRUCTION DES POINTS APPROXIMES ###########################
+##################################################################################################################
+
+def Reconstruction_contour(COORD_PLAN, TAB, PASSAGE):
+
+    liste_point = []
+    for i in range(np.shape(TAB)[0]):
+        theta = TAB[i,0]
+        r = TAB[i, 1]
+        rotation = np.asarray([np.cos(theta), np.sin(theta), 0])
+        vect = r*rotation
+        new_point_plan = COORD_PLAN + vect
+        new_point_canon = np.dot(PASSAGE, new_point_plan.T).T
+        liste_point.append(new_point_canon)
+
+    return np.vstack(liste_point)
