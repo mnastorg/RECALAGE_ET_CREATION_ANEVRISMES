@@ -25,7 +25,6 @@ def Matrice_coefficients(liste_control, liste_mesh, liste_t, degree, n_ordre):
         a0 = []
 
         for t in liste_t :
-
             COEFFS, erreur =  Extraction_coeffs_fourier(control, mesh, t, degree, n_ordre)
             coeffs_fourier.append(COEFFS)
             determination.append(erreur)
@@ -48,10 +47,7 @@ def Extraction_coeffs_fourier(CONTROL, mesh, t, degree, n_ordre):
     X_t = COORD[:,0]
     Y_t = COORD[:,1]
     Z_t = COORD[:,2]
-    print(COORD)
-    print(TAN)
-    print(NOR)
-    print(BI)
+
     #CALCUL DE LA MATRICE DE PASSAGE DE LA BASE CANONIQUE A LA BASE DEFINIE PAR
     #LE REPERE DE FRENET
     PASSAGE = Matrice_de_passage(TAN, NOR, BI)

@@ -4,9 +4,9 @@ from random import *
 from scipy import interpolate
 import matplotlib.pyplot as plt
 
+import Gestion_Fichiers as gf
 import BSplines_Utilities as bs
 import Statistiques_Utilities as stats
-import Gestion_Fichiers as gf
 import Base_Centerline_Utilities as base_center
 import Base_Contour_Utilities as base_contour
 
@@ -20,9 +20,6 @@ def Main_base_centerline(liste_control, nb_points, degree):
 
     #ANALYSE PROCRUSTEENNE DES POINTS DE CONTROLE
     procrust_control, disparity = base_center.Procrustes(liste_control)
-
-    coeff_dilatation = base_center.Dilatation(liste_control)
-    print(coeff_dilatation)
 
     #RECONSTRUCTION DES BSPLINES AVEC BEAUCOUP DE POINTS POUR L'APPROX
     procrust_bsplines = base_center.Construction_bsplines(procrust_control, 200, degree)
@@ -93,91 +90,88 @@ def Main_interpolation(liste_base, liste_t, target):
 
     return INTERPOL
 
-def Main_Generation(BASE_CENTERLINE, BASE_CONTOUR, BASE_RAYON, liste_t, t_anevrisme):
+def Main_Generation(BASE_CENTERLINE, BASE_CONTOUR, BASE_RAYON, coeff_dilatation, liste_t, t_anevrisme, nb_anevrisme):
 
-    #CREATION BASE RAYON ALEATOIRE
-    alea_rayon = np.random.rand(1, np.shape(BASE_RAYON)[1])
-    RAY = alea_rayon*BASE_RAYON
-    func = interpolate.interp1d(np.asarray(liste_t), RAY[:,0])
+    for nb in range(nb_anevrisme):
 
-    #CREATION DE LA CENTERLINE DE L'ANEVRISME
-    alea_centerline = np.random.rand(1, np.shape(BASE_CENTERLINE)[1])
-    coeffs = np.sum(BASE_CENTERLINE*alea_centerline, axis = 1)
+        #CREATION BASE RAYON ALEATOIRE
+        alea_rayon = 1.3 + 0.4*np.random.rand(1, np.shape(BASE_RAYON)[1])
+        print("L'aléatoire du rayon est de : ", alea_rayon)
+        RAY = BASE_RAYON*alea_rayon
+        func = interpolate.interp1d(np.asarray(liste_t), RAY[:,0])
 
-    step = int(len(coeffs)/3)
-    coeffs_x = coeffs[0:step]
-    coeffs_y = coeffs[step:2*step]
-    coeffs_z = coeffs[2*step:]
-    px = np.poly1d(coeffs_x)
-    py = np.poly1d(coeffs_y)
-    pz = np.poly1d(coeffs_z)
-    der1x = np.polyder(px, m = 1)
-    der1y = np.polyder(py, m = 1)
-    der1z = np.polyder(pz, m = 1)
-    der2x = np.polyder(px, m = 2)
-    der2y = np.polyder(py, m = 2)
-    der2z = np.polyder(pz, m = 2)
+        #CREATION DE LA CENTERLINE DE L'ANEVRISME
+        alea_centerline = 2*np.random.rand(1, np.shape(BASE_CENTERLINE)[1]) - 1
+        print("L'aléatoire de la centerline est de : ", alea_centerline)
 
-    COORD = np.zeros((len(t_anevrisme),3))
-    COORD[:,0] = px(t_anevrisme)
-    COORD[:,1] = py(t_anevrisme)
-    COORD[:,2] = pz(t_anevrisme)
+        coeffs = np.sum(BASE_CENTERLINE*alea_centerline, axis = 1)
 
-    DER1 = np.zeros((len(t_anevrisme),3))
-    DER1[:,0] = der1x(t_anevrisme)
-    DER1[:,1] = der1y(t_anevrisme)
-    DER1[:,2] = der1z(t_anevrisme)
+        step = int(len(coeffs)/3)
+        coeffs_x = coeffs[0:step]
+        coeffs_y = coeffs[step:2*step]
+        coeffs_z = coeffs[2*step:]
+        px = np.poly1d(coeffs_x)
+        py = np.poly1d(coeffs_y)
+        pz = np.poly1d(coeffs_z)
+        der1x = np.polyder(px, m = 1)
+        der1y = np.polyder(py, m = 1)
+        der1z = np.polyder(pz, m = 1)
+        der2x = np.polyder(px, m = 2)
+        der2y = np.polyder(py, m = 2)
+        der2z = np.polyder(pz, m = 2)
 
-    DER2 = np.zeros((len(t_anevrisme),3))
-    DER2[:,0] = der2x(t_anevrisme)
-    DER2[:,1] = der2y(t_anevrisme)
-    DER2[:,2] = der2z(t_anevrisme)
+        COORD = np.zeros((len(t_anevrisme),3))
+        COORD[:,0] = px(t_anevrisme)
+        COORD[:,1] = py(t_anevrisme)
+        COORD[:,2] = pz(t_anevrisme)
+        COORD = coeff_dilatation*(COORD/np.linalg.norm(COORD, axis = 0))
 
-    TAN = stats.tangente(DER1)
-    BI = stats.binormale(DER1, DER2)
-    NOR = stats.normale(BI, TAN)
+        DER1 = np.zeros((len(t_anevrisme),3))
+        DER1[:,0] = der1x(t_anevrisme)
+        DER1[:,1] = der1y(t_anevrisme)
+        DER1[:,2] = der1z(t_anevrisme)
 
-    #CREATION DES COUPURES
-    liste_contour = []
-    theta = np.linspace(0, 2*pi, 150)
+        DER2 = np.zeros((len(t_anevrisme),3))
+        DER2[:,0] = der2x(t_anevrisme)
+        DER2[:,1] = der2y(t_anevrisme)
+        DER2[:,2] = der2z(t_anevrisme)
 
-    for i in range(len(t_anevrisme)) :
-        #CALCUL DU A0
-        a0 = 1.e-1*func(t_anevrisme[i])
-        #VECTEUR CONTOUR ALEATOIRE
+        TAN = stats.tangente(DER1)
+        BI = stats.binormale(DER1, DER2)
+        NOR = stats.normale(BI, TAN)
+
+        #CREATION DES COUPURES
+        liste_contour = []
+        theta = np.linspace(0, 2*pi, 150)
+
         alea_contour = np.random.rand(1, np.shape(BASE_CONTOUR)[1])
-        vect = 1.e-1*np.sum(BASE_CONTOUR*alea_contour, axis = 1)
-        step2 = int(len(vect[1:])/2)
-        coeff_a = vect[1:step2+1]
-        coeff_b = vect[step2+1:]
-        R = base_contour.Compute_Serie_Fourier(theta, a0, coeff_a, coeff_b)
-        TAB = np.hstack((theta[np.newaxis].T, R[np.newaxis].T))
-        """
-        plt.figure()
-        plt.plot(TAB[:,0], TAB[:,1])
-        plt.title("R-Theta")
-        plt.xlabel("Theta")
-        plt.ylabel("R")
-        plt.show()
-        """
-        #COORD
-        C = COORD[i,:]
-        T = TAN[i,:]
-        N = NOR[i,:]
-        B = BI[i,:]
-        PASSAGE = base_contour.Matrice_de_passage(T, N, B)
-        COORD_PLAN = ((np.dot(PASSAGE.T, C.T)).T)
-        CONTOUR = base_contour.Reconstruction_contour(COORD_PLAN, TAB, PASSAGE)
-        liste_contour.append(CONTOUR)
+        vect = np.sum(BASE_CONTOUR*alea_contour, axis = 1)
 
-    COORD = np.insert(COORD, 3, 0, axis = 1)
-    L = np.vstack(liste_contour)
-    L = np.insert(L, 3, 100, axis = 1)
-    ANEVRISME = np.vstack((COORD, L))
+        for i in range(len(t_anevrisme)) :
+            #CALCUL DU A0
+            c = 10*func(t_anevrisme[i])
+            #VECTEUR CONTOUR ALEATOIRE
+            step2 = int(len(vect[1:])/2)
+            a0 = vect[0]
+            coeff_a = vect[1:step2+1]
+            coeff_b = vect[step2+1:]
+            R = base_contour.Compute_Serie_Fourier(theta, a0, coeff_a, coeff_b) * c
+            TAB = np.hstack((theta[np.newaxis].T, R[np.newaxis].T))
+            #COORD
+            C = COORD[i,:]
+            T = TAN[i,:]
+            N = NOR[i,:]
+            B = BI[i,:]
+            PASSAGE = base_contour.Matrice_de_passage(T, N, B)
+            COORD_PLAN = ((np.dot(PASSAGE.T, C.T)).T)
+            CONTOUR = base_contour.Reconstruction_contour(COORD_PLAN, TAB, PASSAGE)
+            liste_contour.append(CONTOUR)
 
-    gf.Write_csv("COORD.csv", COORD, "x, y, z, lab")
-    gf.Write_csv("CONTOUR.csv", L, "x, y, z, lab")
+        COORD = np.insert(COORD, 3, 0, axis = 1)
+        L = np.vstack(liste_contour)
+        L = np.insert(L, 3, 100, axis = 1)
+        ANEVRISME = np.vstack((COORD, L))
 
-    gf.Write_csv("ANEVRISME.csv", ANEVRISME, "x, y, z, label")
+        gf.Write_csv("CLASSE/ANEVRISME_{}.csv".format(nb), ANEVRISME, "x, y, z, label")
 
-    return COORD, L, ANEVRISME
+    return 0

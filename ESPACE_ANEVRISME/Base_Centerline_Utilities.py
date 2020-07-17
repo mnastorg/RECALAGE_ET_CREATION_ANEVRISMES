@@ -30,10 +30,10 @@ def Procrustes(liste_control):
 def Dilatation(liste_control):
 
     REF = liste_control[0]
-    REF -= np.mean(REF, 0)
-    scale = np.linalg.norm(REF)
+    NEW = REF - np.mean(REF, 0)
+    scale = np.linalg.norm(NEW)
 
-    return 1./scale
+    return scale
 
 def Construction_bsplines(procrust_control, nb_points, degree):
     """ Construit les BSplines à partir des points de controle qui ont subi

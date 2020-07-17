@@ -34,6 +34,7 @@ def Main_Espace(path_centerline, path_mesh, liste_t):
     nb_points_reconstruction = 200
     degree = 3
     ordre_fourier = 5
+    coeff_dilatation = bcu.Dilatation(liste_control)
     ##########################################
 
     print("-------------------------- BASE CENTERLINE -----------------------------")
@@ -42,11 +43,10 @@ def Main_Espace(path_centerline, path_mesh, liste_t):
     print("Temps création base centerline : ", round(center_time-lecture_time, 3))
 
     print("---------------------- BASE CONTOUR ET RAYON ---------------------------")
-    BASE_CONTOUR, BASE_RAYON = crea_basis.Main_base_contour(liste_control, liste_mesh, liste_t, degree, ordre_fourier)
+    BASE_CONTOUR, BASE_RAYON = crea_basis.Main_base_contour(liste_control, liste_mesh, list(np.linspace(0,1,11)), 3, 5)
 
     end_time = time.time()
     print("Temps création base contour et rayon : ", round(end_time - center_time, 3))
     print("Temps  total méthode : ", round(end_time - start_time, 3))
 
-
-    return BASE_CENTERLINE, BASE_CONTOUR, BASE_RAYON
+    return BASE_CENTERLINE, BASE_CONTOUR, BASE_RAYON, coeff_dilatation
