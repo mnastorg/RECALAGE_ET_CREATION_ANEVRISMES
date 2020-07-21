@@ -33,7 +33,7 @@ def Matrice_coefficients(liste_control, liste_mesh, liste_t, degree, n_ordre):
 
     MAT_PARAM = np.hstack(coeffs_fourier)
     RAYON = np.hstack(rayon)
-
+    
     return MAT_PARAM, RAYON, determination
 
 def Extraction_coeffs_fourier(CONTROL, mesh, t, degree, n_ordre):
