@@ -77,19 +77,6 @@ def Main_base_contour(liste_control, liste_mesh, liste_t, degree, n_ordre):
 
     return BASE_CONTOUR, BASE_RAYON, RAYON
 
-def Main_interpolation(liste_base, liste_t, target):
-
-    a, b = base_contour.find_interval(liste_t, target)
-    print(liste_t[a])
-    print(liste_t[b])
-    PHI = liste_base[a]
-    PSY = liste_base[b]
-    val = (target - liste_t[a])/(liste_t[b] - liste_t[a])
-    print(val)
-    INTERPOL = base_contour.Solution_geodesique(PHI, PSY, val)
-
-    return INTERPOL
-
 def Main_Generation(BASE_CENTERLINE, BASE_CONTOUR, BASE_RAYON, coeff_dilatation, liste_t, t_anevrisme, nb_anevrisme):
 
     for nb in range(nb_anevrisme):

@@ -51,7 +51,7 @@ def Modelisation_contour(PASSAGE, COORD, TAN, mesh):
     #RESSORT LE TABLEAU DE THETA R
     TAB = Theta_R_Experimental(COORD_PLAN, COUPURE_PLAN)
 
-    return TAB, COORD_PLAN, CERCLE
+    return TAB, COORD_PLAN
 
 def Theta_R_Approx(fit, THETA_R_EXP, liste_theta):
 
@@ -299,11 +299,8 @@ def Modele_Fourier(THETA_R_EXP, ordre = 5):
 
     #FITTING VIA LA METHODE DE SYMPI
     fit = Fit(model_dict, x = xdata, y = ydata)
-    fit_result = fit.execute()
-    Params = fit_result.params
-    Params = np.asarray(list(Params.values()))[np.newaxis].T
 
-    return fit, Params
+    return fit
 
 ##################################################################################################################
 ################################ FONCTION POUR LA RECONSTRUCTION DES POINTS APPROXIMES ###########################

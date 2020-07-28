@@ -49,4 +49,4 @@ def Main_Espace(path_centerline, path_mesh, liste_t):
     print("Temps création base contour et rayon : ", round(end_time - center_time, 3))
     print("Temps  total méthode : ", round(end_time - start_time, 3))
 
-    return BASE_CENTERLINE, BASE_CONTOUR, BASE_RAYON, coeff_dilatation, RAYON
+    return BASE_CENTERLINE, BASE_CONTOUR, BASE_RAYON, RAYON, coeff_dilatation

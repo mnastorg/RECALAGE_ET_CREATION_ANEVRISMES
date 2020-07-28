@@ -18,10 +18,14 @@ gf.Reload(fits)
 
 #LISTE D'EXTRACTION DES LABELS
 p001 = [[19,25], 'p001']
-p002 = [[8], 'p002']
+p002 = [[6,8], 'p002']
+p004 = [[9], 'p004']
+p008 = [[6,8], 'p008']
+p011 = [[7], 'p011']
+p013 = [[6], 'p013']
+p015 = [[7], 'p015']
 
-
-def Main(PCL, file_csv, liste_centerline):
+def Main(file_stl, file_csv, liste_centerline):
 
     start_time = time.time()
 
@@ -31,12 +35,16 @@ def Main(PCL, file_csv, liste_centerline):
     print('---------------------------------------------------------------------------------------------------------------------------')
     print('--------------------------------------- CREATION DU NUAGE DE POINTS PAR LEVEL SET -----------------------------------------')
     print('---------------------------------------------------------------------------------------------------------------------------')
-    """
-    pitch = 0.4
+
+    pitch = 0.8
     seuil = 0.7
 
     PCL, LEVELSET = nlsm.Main_nuage_level_set(file_stl, pitch, seuil)
-    """
+    gf.Write_csv("RESULTATS/LEVELSET.csv", LEVELSET, "x, y, z, scalar")
+    gf.Write_csv("RESULTATS/PCL.csv", PCL, "x, y, z")
+
+    #PCL = gf.Lecture_csv_pcl(file_pcl)
+    #LEVELSET = gf.Lecture_csv_levelset(file_levelset)
     print('---------------------------------------------------------------------------------------------------------------------------')
     print('--------------------------------------- FIN CREATION DU NUAGE DE POINTS PAR LEVEL SET -------------------------------------')
     print('---------------------------------------------------------------------------------------------------------------------------')
@@ -115,7 +123,6 @@ def Main(PCL, file_csv, liste_centerline):
     SMOOTH_CONTROL, SMOOTH_BSPLINES = fits.Main_fitting_simple(PRINCIPALE, liste_init2, degree = degree_extract, max_iter = 50, tol = 1.e-5, rig = 0)
     gf.Write_csv("RESULTATS/SMOOTH_CONTROL.csv".format(liste_centerline[1]), SMOOTH_CONTROL, "x, y, z")
     gf.Write_csv("RESULTATS/SMOOTH_BSPLINES.csv", SMOOTH_BSPLINES, "x, y, z, TX, TY, TZ, NX, NY, NZ, BX, BY, BZ, courbure")
-    gf.Write_csv("COMPARATIFS/CONTROL_PRINCIPALE_{}.csv".format(liste_centerline[1]), SMOOTH_CONTROL, "x, y, z")
 
     print('---------------------------------------------------------------------------------------------------------------------------')
     print('---------------------------------------- FIN FITTING / SMOOTHING DE LA SPLINE PRINCIPALE ----------------------------------')
