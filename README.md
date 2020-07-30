@@ -1,4 +1,4 @@
-# STAGE_INRIA_ANEVRISMES
+# Organisation du GitHub
 
 Explications sur l'organisation de ce GitHub : 
 
