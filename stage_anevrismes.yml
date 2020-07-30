@@ -1,0 +1,15 @@
+name: stage_anevrismes
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - numpy
+  - trimesh
+  - scikit-learn
+  - scikit-fmm
+  - geomdl
+  - symfit
+  - time
+  - pandas
+  - ipython
+prefix: /home/matthieu/anaconda3/envs/stage_anevrismes
