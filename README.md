@@ -1,12 +1,23 @@
-# Organisation du GitHub
+# Présentation du travail
 
-Explications sur l'organisation de ce GitHub : 
 
-Programme écrit en utilisant le langage de programmation PYTHON et la distribution Anaconda. 
+## Introduction 
 
-Afin d'accéder aux dépendances requises, il est possible de télécharger et installer l'environnement conda suivant : 
 
-Ces programmes sont disponibles avec un dossier de tests que nous pouvons envoyer si besoin (trop lourd pour être push sur GitHub).
+## Installation des codes
+
+Pour faire fonctionner les codes, nous vous proposons la méthode suivante. Nous utilisons le langage de programmation Python et la distribution Anaconda.
+
+Le fichier "stage_anevrismes.yml" est un environnement conda qui permet de se placer dans un cadre offrant toutes les dépendances nécessaires au bon fonctionnement des fichiers. Pour l'installer vous pouvez : 
+
+  - Soit l'installer directement  via le navigateur Anaconda (Environnements ---> Importer)
+  - Soit entrer la ligne de commande (Terminal pour Linux/MacOs ou Anaconda-Prompt pour Windows) : conda env create -f stage_anevrismes.yml
+
+Vous pouvez vous placer dans l'environnement en tapant : conda activate stage_anevrismes.
+
+Finalement, il suffit de lancer le fichier "MAIN.py". Par exemple, vous pouvez utiliser Spyder ou bien encore Ipython en tapant : "run MAIN.py"
+
+## Fonctionnement des codes
 
 La fichier principal MAIN.py regroupe les 3 fonctions suivantes : 
   
