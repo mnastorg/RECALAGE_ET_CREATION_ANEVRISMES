@@ -15,7 +15,9 @@ Le fichier "stage_anevrismes.yml" est un environnement conda qui permet de se pl
 
 Vous pouvez vous placer dans l'environnement en tapant : conda activate stage_anevrismes.
 
-Pour plus d'informations sur les environnements conda vous pouvez vous référer à la page suivante :  https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
+Pour plus d'informations sur les environnements conda vous pouvez vous référer à la page suivante :  
+
+https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
 
 Finalement, il suffit de charger le fichier "MAIN.py". Par exemple, vous pouvez utiliser Spyder ou bien encore Ipython en tapant : "run MAIN.py"
 
