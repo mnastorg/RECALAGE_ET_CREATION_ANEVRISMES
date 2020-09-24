@@ -21,7 +21,7 @@ gf.Reload(bs)
 def Reconstruction(NUREA):
     """Effectue une reconstruction par branche en Bsplines du squelette de Nurea.
     Ressort un tableau
-    x, y, z, label, is_sail, is_leaf, tan x, tan y, tan z, nor x, nor y, nor z, bi x, bi y, bi z, courbure"""
+    x, y, z, label, is_sail, is_leaf, tan x, tan y, tan z, nor x, nor y, nor z, bi x, bi y, bi z, courbure, longueur"""
 
     #SELECTION DES LABELS
     label = list(set(NUREA[:,3]))

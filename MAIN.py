@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 import trimesh
 import time
 import os
@@ -15,6 +16,10 @@ from espace import *
 
 #SI ON VEUT RELOAD UN MODULE FAIRE COMMANDE gf.Reload(nom_dossier.nom_module)
 #EXEMPLE ! : (gf.Reload(recalage.Nuage_Level_Set_Main))
+
+gf.Reload(espace.Creation_Base_Main)
+gf.Reload(espace.Base_Centerline_Utilities)
+
 
 #LISTE D'EXTRACTION DES LABELS
 p001 = [[19,25], 'p001']
@@ -46,7 +51,7 @@ def Recalage(file_stl, file_csv, file_pcl = 0, liste_extraction = 0):
 
     #VOXELISATION
     print("VOXELISATION :")
-    taille_voxel = 0.8
+    taille_voxel = 0.4
     print("Taille_voxel : ", taille_voxel)
     seuil_laplacien = 0.7
     print("Seuil_laplacien : {} \n".format(seuil_laplacien))
@@ -57,7 +62,7 @@ def Recalage(file_stl, file_csv, file_pcl = 0, liste_extraction = 0):
     print("Degrée des BSplines : ", degree_bsplines)
     iter = 5
     print("Maximum d'itérations : ", iter)
-    tolerance = 1.e-4
+    tolerance = 1.e-3
     print("Tolérance optimisation : ", tolerance)
     rigidite = 1.e-6
     print("Rigidité : {} \n".format(rigidite))
@@ -68,7 +73,7 @@ def Recalage(file_stl, file_csv, file_pcl = 0, liste_extraction = 0):
     print("Degré pour extraction : ", degree_extract)
     nb_control_extract = 5
     print("Nombre pts de controle extraction : ", nb_control_extract)
-    iter_extract = 50
+    iter_extract = 5
     print("Maximum itérations pour extraction : ", iter_extract)
     tol_extract =  1.e-5
     print("Tolérance extraction : ", tol_extract)
@@ -153,10 +158,8 @@ def Recalage(file_stl, file_csv, file_pcl = 0, liste_extraction = 0):
         print('---------------------------------------- FIN EXTRACTION ET SMOOTHING DE LA COURBE PRINCIPALE ------------------------------')
         print('---------------------------------------------------------------------------------------------------------------------------')
 
-        end_time = time.time()
-        print("Temps total de la méthode : ", round(end_time - start_time, 2))
-
-        return 1
+    end_time = time.time()
+    print("Temps total de la méthode : ", round(end_time - start_time, 2))
 
     return 0
 
@@ -183,17 +186,17 @@ def Espace_Anevrisme(doss_centerline, doss_mesh, generation = 0):
 
     #BASE CONTOUR
     print("BASE CONTOUR : ")
-    nb_coupure = 10
-    print("Nombre de coupure par géométrie : ", nb_coupure)
+    nb_coupure = 20
+    print("Nombre de coupures par géométrie : ", nb_coupure)
     liste_t = np.linspace(0, 1, nb_coupure)
-    theta = np.linspace(0, 2*np.pi, 150)
+    theta = np.linspace(0, 2*np.pi, 300)
     print("Nombre de theta entre 0 et 2pi : ", len(theta))
-    ordre_fourier = 5
-    print("Nombre de mode de fourier {} \n".format(ordre_fourier))
+    ordre_fourier = 7
+    print("Nombre de mode de fourier : {} \n".format(ordre_fourier))
 
     #GENERATION
     print("PARAMETRES GENERATION : ")
-    nb_points_generation = 150
+    nb_points_generation = 200
     t_anevrisme = np.linspace(0, 1, nb_points_generation)
     print("Nombre de points reconstruction centerline générée : ", nb_points_generation)
     print("Nombre d'anévrismes générés : ", generation)
@@ -262,7 +265,7 @@ def Espace_Anevrisme(doss_centerline, doss_mesh, generation = 0):
 
     return 0
 
-def Parametrisation(file_control, file_stl):
+def Parametrisation(file_control, file_stl, test_erreur = 0):
     """ Fonction permettand d'effectuer la reconstruction d'une géométrie grâce à la centerline et la géométrie initiale."""
 
     print('---------------------------------------------------------------------------------------------------------------------------')
@@ -301,7 +304,7 @@ def Parametrisation(file_control, file_stl):
     print('---------------------------------------------------------------------------------------------------------------------------')
     param_time = time.time()
 
-    COORDONNEES, PAROI = espace.Parametrisation_Main.Parametrisation(CONTROL, aorte, liste_t, liste_theta, degree, coeff_fourier)
+    COORDONNEES, PAROI, e = espace.Parametrisation_Main.Parametrisation(CONTROL, aorte, liste_t, liste_theta, degree, coeff_fourier)
 
     gf.Write_csv("resultats/parametrisation/CENTERLINE.csv", COORDONNEES, "x, y, z")
     gf.Write_csv("resultats/parametrisation/PAROI.csv", PAROI, "x, y, z")
@@ -313,5 +316,51 @@ def Parametrisation(file_control, file_stl):
     print('---------------------------------------------------------------------------------------------------------------------------')
     print('------------------------------------------------ FIN PARAMETRISATION ------------------------------------------------------')
     print('---------------------------------------------------------------------------------------------------------------------------')
+
+    if test_erreur != 0 :
+
+        print('---------------------------------------------------------------------------------------------------------------------------')
+        print('------------------------------------------------ ERREUR PARAMETRISATION ---------------------------------------------------')
+        print('---------------------------------------------------------------------------------------------------------------------------')
+
+        pitch = 0.7
+        new_vox = espace.Parametrisation_Utilities.Section_voxelisation(PAROI, aorte, pitch)
+        nb_voxels = new_vox.filled_count
+        print("Nombre de voxels total sur la coupe est de : ", nb_voxels)
+
+        coupe = []
+        err = []
+
+        for i in range(1, test_erreur):
+            print("Itération : ", i)
+            nb_coupe = 100
+            print("Nombre de coupes : ", nb_coupe)
+
+            t = np.linspace(0,1,nb_coupe)
+            theta = np.linspace(0, 2*np.pi, 300)
+            fourier = i+1
+
+            COORDONNEES, PAROI, e = espace.Parametrisation_Main.Parametrisation(CONTROL, aorte, t, theta, degree, fourier)
+
+            nb_fill = np.count_nonzero(new_vox.is_filled(PAROI))
+
+            coupe.append(fourier)
+            err.append(e)
+
+            #err.append((nb_fill/nb_voxels)*100)
+            print("Pourcentage de voxels remplis est {} %".format((nb_fill/nb_voxels)*100))
+
+        print(coupe)
+        print(err)
+        plt.figure()
+        plt.plot(coupe, err)
+        plt.title("Erreur paramétrisation en fonction du nombre de coupes")
+        plt.xlabel("Nombre de coupes")
+        plt.ylabel("Pourcentage de voxels atteints")
+        plt.show()
+
+        print('---------------------------------------------------------------------------------------------------------------------------')
+        print('------------------------------------------------ FIN ERREUR PARAMETRISATION -----------------------------------------------')
+        print('---------------------------------------------------------------------------------------------------------------------------')
 
     return 0

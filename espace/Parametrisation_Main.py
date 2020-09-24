@@ -45,7 +45,7 @@ def Parametrisation(CONTROL, aorte, liste_t, liste_theta, degree, coeff_fourier)
         #COUPURE DE L'AORTE PAR LE PLAN (N/B). POUR TOUT POINT DE LA COUPURE, RESSORT
         #SON ANGLE / NORMALE (COLONNE 0) ET SA DISTANCE / COORD (COLONNE 2).
         #PERMET D'EXPRIMER UN MODELE VIA UNE SERIE DE FOURIER.
-        THETA_R_EXP, COORD_PLAN = pru.Modelisation_contour(PASSAGE, COORD, TAN, aorte)
+        THETA_R_EXP, COORD_PLAN, COUPURE_PLAN = pru.Modelisation_contour(PASSAGE, COORD, TAN, aorte)
 
 
         #EFFECTUE LE FITTING DU MODELE D'ORDRE n VIA UNE SERIE DE FOURIER
@@ -59,7 +59,7 @@ def Parametrisation(CONTROL, aorte, liste_t, liste_theta, degree, coeff_fourier)
 
 
         #ON RECONSTRUIT LES POINTS RECONSTRUIT DANS LA BASE CANONIQUE
-        CONTOUR = pru.Reconstruction_contour(COORD_PLAN, THETA_R_APPROX, PASSAGE)
+        CONTOUR = pru.Reconstruction_contour(COORD_PLAN, THETA_R_APPROX, PASSAGE, COUPURE_PLAN)
 
 
         coordonnees.append(COORD)
@@ -79,4 +79,4 @@ def Parametrisation(CONTROL, aorte, liste_t, liste_theta, degree, coeff_fourier)
     print("ERREUR TOTAL (MOYENNE COEFF DETERMINATION) : ", np.mean(erreur))
     print("-----------------------------------------------")
 
-    return COORDONNEES, PAROI
+    return COORDONNEES, PAROI, np.mean(erreur)

@@ -105,12 +105,14 @@ def POD(MAT, string):
     PROJ = np.dot(MAT, MAT.T)
     val, VECT = np.linalg.eigh(PROJ)
     moy = np.mean(val)
-    indices = (np.where(val >= moy))[0]
+    indices = (np.where(val >= moy))[0]    
     BASE = VECT[:,indices]
 
-    t = np.arange(0, len(val))
-    plt.plot(t, val[::-1], '-o')
-    plt.title("Convergence des valeurs propres" + string)
+    s = np.sum(val)
+    plt.plot(np.arange(len(val)), (val[::-1]/s)*100, '-o')
+    plt.title("Pourcentage part des valeurs propres pour " + string)
+    plt.xlabel("Valeur propre")
+    plt.ylabel("Pourcentage variance")
     plt.show()
 
     return BASE

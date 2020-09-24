@@ -43,6 +43,7 @@ def Main_nuage_level_set(file_stl, pitch, seuil):
 
     #LEVELSET SANS LES POINTS EXTERIEURS A LA GEOMETRIE
     LEVELSET = nlsu.Level_set(BORDURE)
+    
     INDICES_LEVELSET = nlsu.Ajout_indices(LEVELSET, indices_geo, FILL)
 
     step2 = time.time()

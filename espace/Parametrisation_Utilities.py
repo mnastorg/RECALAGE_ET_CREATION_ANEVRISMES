@@ -52,10 +52,20 @@ def Modelisation_contour(PASSAGE, COORD, TAN, mesh):
     #ON FAIT LE CHANGEMENT DE PLAN DANS LA BASE (N, B, T)
     COORD_PLAN, COUPURE_PLAN = Changement_de_plan(PASSAGE, COORD, CERCLE)
 
+    """"
+    plt.figure()
+    plt.scatter(COORD_PLAN[:,0], COORD_PLAN[:,1], label = "Point centerline")
+    plt.scatter(COUPURE_PLAN[:,0], COUPURE_PLAN[:,1], label = "Nuage de point")
+    plt.quiver(COORD_PLAN[:,0], COORD_PLAN[:,1], 1, 0, color = 'green', label = "Normale")
+    plt.quiver(COORD_PLAN[:,0], COORD_PLAN[:,1], 0, 1, color = 'blue', label = "Binormale")
+    plt.legend()
+    plt.show()
+    """
+
     #RESSORT LE TABLEAU DE THETA R
     TAB = Theta_R_Experimental(COORD_PLAN, COUPURE_PLAN)
 
-    return TAB, COORD_PLAN
+    return TAB, COORD_PLAN, COUPURE_PLAN
 
 def Theta_R_Approx(fit, THETA_R_EXP, liste_theta):
 
@@ -310,16 +320,50 @@ def Modele_Fourier(THETA_R_EXP, ordre = 5):
 ################################ FONCTION POUR LA RECONSTRUCTION DES POINTS APPROXIMES ###########################
 ##################################################################################################################
 
-def Reconstruction_contour(COORD_PLAN, TAB, PASSAGE):
+def Reconstruction_contour(COORD_PLAN, TAB, PASSAGE, COUPURE_PLAN):
 
     liste_point = []
+    ctr = []
     for i in range(np.shape(TAB)[0]):
         theta = TAB[i,0]
         r = TAB[i, 1]
         rotation = np.asarray([np.cos(theta), np.sin(theta), 0])
         vect = r*rotation
         new_point_plan = COORD_PLAN + vect
+        ctr.append(new_point_plan)
         new_point_canon = np.dot(PASSAGE, new_point_plan.T).T
         liste_point.append(new_point_canon)
 
+    """
+    CTR = np.vstack(ctr)
+    plt.figure()
+    plt.plot(CTR[:,0], CTR[:,1], color = 'blue', label = 'Reconstruction')
+    plt.scatter(COUPURE_PLAN[:,0], COUPURE_PLAN[:,1], color = 'red', label = 'Original')
+    plt.quiver(COORD_PLAN[:,0], COORD_PLAN[:,1], 1, 0, color = 'green', label = "Normale")
+    plt.quiver(COORD_PLAN[:,0], COORD_PLAN[:,1], 0, 1, color = 'blue', label = "Binormale")
+    plt.legend()
+    plt.title("Coupure de l'aorte avec le nouveau repère")
+    plt.show()
+    """
     return np.vstack(liste_point)
+
+def Section_voxelisation(PAROI, aorte, pitch):
+
+    vox = aorte.voxelized(pitch)
+
+    CUT_MAX = np.max(PAROI, axis = 0) + 1
+    CUT_MIN = np.min(PAROI, axis = 0) + 1
+
+    POINTS = vox.points
+
+    liste = []
+    for i in range(np.shape(POINTS)[0]):
+        P = POINTS[i,:]
+        if (P[0]>CUT_MIN[0] and P[0]<CUT_MAX[0]) and (P[1]>CUT_MIN[1] and P[1]<CUT_MAX[1]) and (P[2]>CUT_MIN[2] and P[2]<CUT_MAX[2]):
+            liste.append(i)
+
+    NEW = POINTS[liste,:]
+    new_mesh = trimesh.voxel.ops.points_to_marching_cubes(NEW, pitch)
+    new_vox = new_mesh.voxelized(pitch)
+
+    return new_vox

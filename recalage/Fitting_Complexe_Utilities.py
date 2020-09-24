@@ -58,29 +58,49 @@ def Fitting(PCL, liste_controle, liste_bsplines, liste_knot, liste_basis_der2, d
 
     #CALCUL DE LA MATRICE BLOCK A
     BIG_BASIS = linalg.block_diag(BASIS, BASIS, BASIS)
+
     #CALCUL DU SECOND MEMBRE b
     SND_OBJ = Matrix_to_vector(PCL - BSPLINES_FOOT_POINT[:,0:3], dimension = 3)
 
     #CALCUL DE LA MATRICE BLOCK B
     BIG_BASIS_DER2 = linalg.block_diag(linalg.block_diag(*liste_basis_der2), linalg.block_diag(*liste_basis_der2), linalg.block_diag(*liste_basis_der2))
+
     #CALCUL DU SECOND MEMBRE c
     SND_REG = np.dot(BIG_BASIS_DER2, controle)
+
+    A = np.concatenate((BIG_BASIS, np.sqrt(rig)*BIG_BASIS_DER2))
+    b = np.concatenate((SND_OBJ, -np.sqrt(rig)*SND_REG))
+
+    #JUSTE POUR S'ASSURER QUE LE RANG DE A EST MAXIMAL
+    rang = np.linalg.matrix_rank(A)
+    print("Le rang de A est-il maximal ? : ", rang == np.shape(A)[1])
 
     ########################################################################################################################################
     ########### ETAPE 3 - ALGORITHME DE MINIMISATION #######################################################################################
     ########################################################################################################################################
 
-    D0 = np.zeros(3*nb_control)
-    #D = optimize.minimize(ToMinimize_3D, D0, args = (BIG_BASIS, BIG_BASIS_DER2, SND_OBJ, SND_REG, rig), method = 'SLSQP', jac = Gradient)
-    D = optimize.minimize(ToMinimize_3D, D0, args = (BIG_BASIS, BIG_BASIS_DER2, SND_OBJ, SND_REG, rig), method = 'Newton-CG', jac = Gradient, hess = Hessienne)
+    if (rang == np.shape(A)[1]):
 
-    ########################################################################################################################################
-    ########### ETAPE 4 - MISE A JOUR DES BSPLINES PAR VECTEUR D ###########################################################################
-    ########################################################################################################################################
+        AtA = np.dot(A.T, A)
+        Atb = np.dot(A.T, b)
 
-    new_control, new_bsplines = BSplines_Update_3D(D.x, liste_controle, liste_knot, degree, liste_t)
-    nb_points, liste_points = Nb_element_liste_array(new_bsplines)
-    erreur  = D.fun/(3*nb_points)
+        D = np.linalg.solve(AtA, Atb)
+        e = np.linalg.norm(np.dot(A,D) - b)**2
+
+        new_control, new_bsplines = BSplines_Update_3D(np.reshape(D, np.shape(D)[0]), liste_controle, liste_knot, degree, liste_t)
+        nb_points, liste_points = Nb_element_liste_array(new_bsplines)
+        erreur  = e/(3*nb_points)
+
+    else :
+
+        D0 = np.zeros(3*nb_control)
+        #D = optimize.minimize(ToMinimize_3D_INIT, D0, args = (BIG_BASIS, BIG_BASIS_DER2, SND_OBJ, SND_REG, rig), method = 'CG', jac = Gradient_INIT)
+        #D = optimize.minimize(ToMinimize_3D_INIT, D0, args = (BIG_BASIS, BIG_BASIS_DER2, SND_OBJ, SND_REG, rig), method = 'Newton-CG', jac = Gradient_INIT, hess = Hessienne_INIT)
+        D = optimize.minimize(ToMinimize_3D, D0, args = (A,b), method = 'Newton-CG', jac = Gradient, hess = Hessienne)
+
+        new_control, new_bsplines = BSplines_Update_3D(D.x, liste_controle, liste_knot, degree, liste_t)
+        nb_points, liste_points = Nb_element_liste_array(new_bsplines)
+        erreur  = D.fun/(3*nb_points)
 
     return new_control, new_bsplines, erreur
 
@@ -127,7 +147,7 @@ def Matrix_Basis_Foot_Point(BSPLINES_FOOT_POINT, liste_controle, liste_bsplines,
 
     nb_foot_point = np.shape(BSPLINES_FOOT_POINT)[0]
 
-    BASIS = np.zeros((nb_foot_point,nb_control))
+    BASIS = np.zeros((nb_foot_point, nb_control))
     BASIS_DER1 = 0*BASIS
     BASIS_DER2 = 0*BASIS
 
@@ -160,10 +180,10 @@ def Matrix_Basis_Foot_Point(BSPLINES_FOOT_POINT, liste_controle, liste_bsplines,
     return BASIS, BASIS_DER1, BASIS_DER2
 
 ###########################################################################################################################################
-############################################### FONCTIONS POUR LA MINIMISATION ############################################################
+############################################### FONCTIONS POUR LA MINIMISATION (VERSION INITIALE) #########################################
 ###########################################################################################################################################
 
-def ToMinimize_3D(D, BIG_BASIS, BIG_BASIS_DER2, SND_OBJ, SND_REG, rig):
+def ToMinimize_3D_INIT(D, BIG_BASIS, BIG_BASIS_DER2, SND_OBJ, SND_REG, rig):
 
     f_obj = 0.5*np.linalg.norm( np.dot(BIG_BASIS , D[np.newaxis].T) - SND_OBJ )**2
 
@@ -171,7 +191,7 @@ def ToMinimize_3D(D, BIG_BASIS, BIG_BASIS_DER2, SND_OBJ, SND_REG, rig):
 
     return f_obj + rig*NOR_DER2
 
-def Gradient(D, BIG_BASIS, BIG_BASIS_DER2, SND_OBJ, SND_REG, rig):
+def Gradient_INIT(D, BIG_BASIS, BIG_BASIS_DER2, SND_OBJ, SND_REG, rig):
 
     PART1 = np.dot(BIG_BASIS.T, np.dot(BIG_BASIS , D[np.newaxis].T) - SND_OBJ)
 
@@ -179,9 +199,29 @@ def Gradient(D, BIG_BASIS, BIG_BASIS_DER2, SND_OBJ, SND_REG, rig):
 
     return np.squeeze(PART1 + PART2)
 
-def Hessienne(D, BIG_BASIS, BIG_BASIS_DER2, SND_OBJ, SND_REG, rig):
+def Hessienne_INIT(D, BIG_BASIS, BIG_BASIS_DER2, SND_OBJ, SND_REG, rig):
 
     return np.dot(BIG_BASIS.T, BIG_BASIS) + rig*np.dot(BIG_BASIS_DER2.T, BIG_BASIS_DER2)
+
+###########################################################################################################################################
+############################################### FONCTIONS POUR LA MINIMISATION (VERSION FINALE) ###########################################
+###########################################################################################################################################
+
+def ToMinimize_3D(D, A, b):
+
+    f_obj = 0.5*np.linalg.norm( np.dot(A , D[np.newaxis].T) - b )**2
+
+    return f_obj
+
+def Gradient(D, A, b):
+
+    GRAD = np.dot(A.T, np.dot(A , D[np.newaxis].T) - b)
+
+    return np.reshape(GRAD, np.shape(GRAD)[0])
+
+def Hessienne(D, A, b):
+
+    return np.dot(A.T, A)
 
 ############################################################################################################################################
 ############################################## FONCTIONS MISE A JOUR #######################################################################

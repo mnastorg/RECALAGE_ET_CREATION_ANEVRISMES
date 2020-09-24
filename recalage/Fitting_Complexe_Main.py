@@ -5,6 +5,7 @@
 import numpy as np
 import time
 from math import *
+import matplotlib.pyplot as plt
 
 from outils import Gestion_Fichiers as gf
 from recalage import Initialisation_Utilities as init
@@ -17,6 +18,8 @@ gf.Reload(init)
 
 def Main_fitting_complexe(PCL, liste_init, degree = 2, max_iter = 5, tol = 1.e-4, rig = 1.e-6):
     """Procède au fitting d'une géométrie complexe i.e enchainement de BSplines à reconnecter."""
+
+    debut = time.time()
 
     #EXTRACTIONS DES ELEMENTS INITIAUX
     liste_controle = liste_init[0]
@@ -32,6 +35,7 @@ def Main_fitting_complexe(PCL, liste_init, degree = 2, max_iter = 5, tol = 1.e-4
 
     tab_it = []
     tab_err = [0,1]
+    e = []
     it = 0
 
     while it < max_iter and np.abs(tab_err[-1] - tab_err[-2]) > tol :
@@ -43,6 +47,7 @@ def Main_fitting_complexe(PCL, liste_init, degree = 2, max_iter = 5, tol = 1.e-4
         new_control, new_bsplines, erreur = ftcu.Fitting(PCL, liste_controle, liste_bsplines, liste_knot, liste_basis_der2, degree, liste_t, rig)
         print("Erreur est de : ", round(erreur, 3))
         tab_err.append(erreur)
+        e.append(erreur)
 
         #MERGE DES POINTS DE CONNECTION
         merge_control, merge_bsplines = connect.Process_connection(new_control, liste_knot, degree, liste_t, merge)
@@ -59,5 +64,9 @@ def Main_fitting_complexe(PCL, liste_init, degree = 2, max_iter = 5, tol = 1.e-4
 
         end_time = time.time()
         print("Temps de calcul : ", round(end_time - start_time, 2))
+
+    plt.plot(np.arange(it), e, '-o')
+    plt.title("Erreur en fonction du nombre d'itérations")
+    plt.show()
 
     return liste_controle, liste_bsplines, proj_der1, proj_der2

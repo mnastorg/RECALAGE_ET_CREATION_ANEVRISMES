@@ -4,7 +4,7 @@
 
 import numpy as np
 from math import *
-from random import *
+#from random import *
 from scipy import interpolate
 import matplotlib.pyplot as plt
 
@@ -85,16 +85,17 @@ def Main_Generation(BASE_CENTERLINE, BASE_CONTOUR, BASE_RAYON, coeff_dilatation,
     """Retourne un anévrisme généré par les bases calculées précédemment."""
 
     #CREATION BASE RAYON ALEATOIRE
-    alea_rayon = 0.9 + 0.2*np.random.rand(1,np.shape(BASE_RAYON)[1])
+    alea_rayon = 2*np.random.rand(1,np.shape(BASE_RAYON)[1])
+
     print("L'aléatoire du rayon est de : ", alea_rayon)
     RAY = np.sum(BASE_RAYON*alea_rayon, axis = 1)
     liste_t = np.linspace(0,1,np.shape(RAY)[0])
     func = interpolate.interp1d(np.asarray(liste_t), RAY)
 
     #CREATION DE LA CENTERLINE DE L'ANEVRISME
-    alea_centerline = 0.2 + 0.8*np.random.rand(1, np.shape(BASE_CENTERLINE)[1])
-    #alea_centerline[:,0] = 0.2
-    alea_centerline[:,1] = 1 - alea_centerline[:,0]
+    #alea_centerline = 0.2 + 0.8*np.random.rand(1, np.shape(BASE_CENTERLINE)[1])
+    alea_centerline = 4*np.random.rand(1, np.shape(BASE_CENTERLINE)[1]) - 2
+    alea_centerline[:,1] = np.random.rand(1, 1)
 
     print("L'aléatoire de la centerline est de : ", alea_centerline)
 
@@ -118,7 +119,7 @@ def Main_Generation(BASE_CENTERLINE, BASE_CONTOUR, BASE_RAYON, coeff_dilatation,
     COORD[:,0] = px(t_anevrisme)
     COORD[:,1] = py(t_anevrisme)
     COORD[:,2] = pz(t_anevrisme)
-    COORD = coeff_dilatation*(COORD)#/np.linalg.norm(COORD, axis = 0))
+    COORD = (coeff_dilatation*(COORD))#/np.linalg.norm(COORD, axis = 0)
 
     DER1 = np.zeros((len(t_anevrisme),3))
     DER1[:,0] = der1x(t_anevrisme)
@@ -143,8 +144,8 @@ def Main_Generation(BASE_CENTERLINE, BASE_CONTOUR, BASE_RAYON, coeff_dilatation,
         c = 10*func(t_anevrisme[i])
 
         #VECTEUR CONTOUR ALEATOIRE
-        alea_contour = 0.8 + 0.4*np.random.rand(1, np.shape(BASE_CONTOUR)[1])
-        vect = np.sum(BASE_CONTOUR*alea_contour, axis = 1)
+        alea_contour = 0.8 + 0.4*np.random.rand(1,1)
+        vect = np.sum(BASE_CONTOUR[:,0]*alea_contour, axis = 1)
         step2 = int(len(vect[1:])/2)
         a0 = c
         coeff_a = vect[1:step2+1]
